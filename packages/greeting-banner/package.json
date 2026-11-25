@@ -1,0 +1,40 @@
+{
+  "name": "@colyseus/greeting-banner",
+  "version": "4.0.3",
+  "type": "module",
+  "description": "Greeting banner for Colyseus & Cloud",
+  "input": "./src/index.ts",
+  "main": "./build/index.cjs",
+  "module": "./src/index.ts",
+  "typings": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "@source": "./src/index.ts",
+      "types": "./build/index.d.ts",
+      "module-sync": "./build/index.mjs",
+      "import": "./build/index.mjs",
+      "require": "./build/index.cjs"
+    },
+    "./*": {
+      "@source": "./src/*.ts",
+      "types": "./build/*.d.ts",
+      "module-sync": "./build/*.mjs",
+      "import": "./build/*.mjs",
+      "require": "./build/*.cjs"
+    }
+  },
+  "keywords": [
+    "colyseus"
+  ],
+  "license": "MIT",
+  "files": [
+    "build",
+    "src"
+  ],
+  "engines": {
+    "node": ">= 22.x"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

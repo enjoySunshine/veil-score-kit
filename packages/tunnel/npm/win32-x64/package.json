@@ -1,0 +1,18 @@
+{
+  "name": "@colyseus/tunnel-win32-x64",
+  "version": "0.18.1",
+  "description": "The tunnel agent of @colyseus/tunnel for win32 x64",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

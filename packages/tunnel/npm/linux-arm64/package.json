@@ -1,0 +1,18 @@
+{
+  "name": "@colyseus/tunnel-linux-arm64",
+  "version": "0.18.1",
+  "description": "The tunnel agent of @colyseus/tunnel for linux arm64",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "bin"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
