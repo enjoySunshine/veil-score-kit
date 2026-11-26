@@ -1,5 +1,6 @@
 *.log
 node_modules
+.pnpm-store/
 yarn.lock
 /lib
 .DS_Store

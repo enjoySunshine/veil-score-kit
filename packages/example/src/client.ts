@@ -13,6 +13,11 @@ const ctx = canvas?.getContext('2d');
 let room: Room<MyRoom> | null;
 const players = new Map<string, { x: number; y: number }>();
 
+// Own score, mirrored from the server. `score` is a view-filtered field:
+// the server sends it only to the owner, so this is the ONLY place a score
+// exists client-side — other players' scores never arrive at all.
+let myScore = 0;
+
 // HTTP endpoint buttons — work without a room connection
 const httpClient = new Client<typeof server>(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`);
 
@@ -64,6 +69,13 @@ function draw() {
     ctx.fillText(sessionId.slice(0, 6), player.x, player.y + 24);
   });
 
+  // Own score HUD — others' scores are never received, so there is
+  // nothing to draw for them.
+  ctx.fillStyle = '#111827';
+  ctx.font = '16px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Score: ${myScore}`, 12, 24);
+
   requestAnimationFrame(draw);
 }
 
@@ -102,6 +114,14 @@ button?.addEventListener('click', async () => {
         const p = players.get(sessionId);
         if (p) p.y = value;
       });
+
+      // Only our own player ever carries a `score` — the server filters
+      // the field per recipient, so for everyone else it stays untouched.
+      if (sessionId === room?.sessionId) {
+        myScore = player.score;
+        callbacks.listen(player, "score", (value) => { myScore = value; });
+      }
+
       log(`Player joined: ${sessionId}`);
     });
 
@@ -117,6 +137,7 @@ button?.addEventListener('click', async () => {
       button.disabled = false;
       room = null;
       players.clear();
+      myScore = 0;
     });
 
     room.onError((code, message) => {

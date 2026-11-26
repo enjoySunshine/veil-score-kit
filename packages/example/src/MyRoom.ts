@@ -1,5 +1,5 @@
 import { CloseCode, Room, type Client, validate, type Messages, type AuthContext, definePlugins } from "@colyseus/core";
-import { schema, t, type SchemaType } from "@colyseus/schema";
+import { schema, t, StateView, type SchemaType } from "@colyseus/schema";
 import { AnalyticsPlugin, CloudSavesPlugin, LeaderboardsPlugin } from "@colyseus/database";
 import { z } from "zod";
 import { database } from "./db/database.ts";
@@ -15,7 +15,11 @@ const VERSION = 5;
 export const Player = schema({
   x: t.number(),
   y: t.number(),
-  score: t.number(),
+  // Private to the owner: `.view()` fields are encoded only for clients
+  // whose StateView holds this Player instance (wired in `onJoin`). Everyone
+  // receives `x`/`y`; only the owner ever receives `score` — in the full
+  // state on (re)join and in per-tick patches.
+  score: t.number().view(),
 });
 export type Player = SchemaType<typeof Player>;
 
@@ -120,6 +124,17 @@ export class MyRoom extends Room<{ state: MyRoomState, client: MyClient, input: 
       console.log("MOVE", { sessionId: client.sessionId, VERSION });
     }),
 
+    // The room's record of the score IS this state field — the owner's
+    // client mirrors it through the view-filtered sync, nobody else
+    // receives it. (A real game computes scores server-side; what keeps
+    // it private is the `.view()` tag, not who writes it.)
+    score: validate(z.object({
+      value: z.number(),
+    }), (client, message) => {
+      const player = this.state.players.get(client.sessionId)!;
+      player.score = message.value;
+    }),
+
     nopayload_2: (client: MyClient, message: any) => {
       client.send("obj_message", { message: "hello" })
       this.broadcast("obj_message", { message: "hello" })
@@ -153,7 +168,17 @@ export class MyRoom extends Room<{ state: MyRoomState, client: MyClient, input: 
     const player = new Player();
     player.x = Math.random() * this.state.mapWidth;
     player.y = Math.random() * this.state.mapHeight;
+    player.score = options?.score ?? 0;
     this.state.players.set(client.sessionId, player);
+
+    // The owner's view holds ONLY their own Player: `score` syncs to them
+    // alone while `x`/`y` keep broadcasting to everyone. Must run after
+    // `players.set()` — StateView refuses detached instances. On
+    // reconnection the framework carries `client.view` over to the new
+    // connection, so the owner keeps receiving their score.
+    client.view = new StateView();
+    client.view.add(player);
+
     console.log("ON JOIN", { VERSION });
   }
 
@@ -179,6 +204,8 @@ export class MyRoom extends Room<{ state: MyRoomState, client: MyClient, input: 
 
     } catch (e) {
       this.state.players.delete(client.sessionId);
+      // Final leave (no reconnection): release the view ID it held.
+      client.view?.dispose();
       console.log(client.sessionId, "left!");
     }
   }
